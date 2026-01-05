@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8">
+    <!-- Header -->
+    <div class="text-center space-y-2">
+        <h1 class="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-brand-light">
+            Convertidor PDF a Audio</h1>
+        <p class="text-gray-400">Transforma tus documentos en experiencia auditiva</p>
+    </div>
+
+    <!-- Upload Section -->
+    <div id="upload-section" class="glass p-8 transition-all duration-500">
+        <div id="drop-zone"
+            class="drop-zone border-2 border-dashed border-gray-600 rounded-xl p-12 text-center cursor-pointer hover:border-brand-light hover:bg-white/5 transition-all group">
+            <input type="file" id="file-input" class="hidden" accept=".pdf">
+            <ion-icon name="cloud-upload-outline"
+                class="text-6xl text-gray-400 group-hover:text-brand-light mb-4 transition-colors"></ion-icon>
+            <h3 class="text-xl font-medium text-white mb-2">Arrastra tu PDF aquí</h3>
+            <p class="text-gray-400 text-sm">o haz clic para seleccionar (Máx 71 páginas)</p>
+        </div>
+        <div id="upload-error"
+            class="hidden mt-4 text-red-400 text-center bg-red-500/10 p-3 rounded-lg border border-red-500/20"></div>
+    </div>
+
+    <!-- Configuration Section (Hidden initially) -->
+    <div id="config-section" class="hidden glass p-8 space-y-6 animate-fade-in">
+        <div class="flex items-center justify-between border-b border-white/10 pb-6">
+            <div>
+                <h3 class="text-xl font-bold text-white" id="doc-title">Document Title</h3>
+                <p class="text-gray-400 text-sm">Autor: <span id="doc-author">Author</span></p>
+            </div>
+            <div class="text-right">
+                <span
+                    class="px-3 py-1 rounded-full bg-brand-light/20 text-brand-light text-sm font-medium border border-brand-light/30">
+                    <ion-icon name="language-outline" class="mr-1"></ion-icon>
+                    <span id="detected-language">ES</span>
+                </span>
+                <p class="text-gray-500 text-xs mt-1"><span id="doc-pages">0</span> páginas</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Voice Selection -->
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Voz</label>
+                <select id="voice-select"
+                    class="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-brand-light transition-colors">
+                    <!-- Options populated by JS -->
+                </select>
+            </div>
+
+            <!-- Speed Control -->
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Velocidad</label>
+                <div class="flex items-center gap-4">
+                    <span class="text-xs text-gray-400">0.5x</span>
+                    <input type="range" min="0.5" max="2.0" step="0.25" value="1.0" id="speed-range"
+                        class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-brand-light">
+                    <span class="text-xs text-gray-400">2.0x</span>
+                </div>
+                <div class="text-center mt-1 text-brand-light font-mono text-sm" id="speed-display">1.0x</div>
+            </div>
+        </div>
+
+        <button id="convert-btn"
+            class="w-full btn-premium py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 group">
+            <ion-icon name="flash" class="group-hover:text-yellow-300 transition-colors"></ion-icon>
+            Generar Audio
+        </button>
+    </div>
+
+    <!-- Progress Section -->
+    <div id="progress-section" class="hidden glass p-8 text-center space-y-4 animate-fade-in">
+        <h3 class="text-lg font-medium text-white" id="progress-status">Procesando...</h3>
+        <div class="w-full bg-gray-700 rounded-full h-2.5 dark:bg-gray-700 overflow-hidden relative">
+            <div id="progress-bar"
+                class="bg-brand-light h-2.5 rounded-full transition-all duration-300 w-0 relative overflow-hidden">
+                <div class="absolute top-0 left-0 bottom-0 right-0 bg-white/20 animate-pulse"></div>
+            </div>
+        </div>
+        <p class="text-sm text-gray-400" id="progress-detail">Iniciando motor de síntesis...</p>
+    </div>
+
+    <!-- Result Section -->
+    <div id="result-section" class="hidden glass p-8 animate-fade-in">
+        <div class="flex flex-col items-center space-y-6">
+            <div
+                class="w-16 h-16 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center text-3xl border border-green-500/30">
+                <ion-icon name="checkmark-done"></ion-icon>
+            </div>
+            <h2 class="text-2xl font-bold text-white">¡Conversión Completada!</h2>
+
+            <audio id="audio-player" controls class="w-full max-w-lg mb-4 rounded-lg bg-gray-100"></audio>
+
+            <div class="flex gap-4 w-full justify-center">
+                <button id="play-btn"
+                    class="px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-lg flex items-center gap-2 transition-all">
+                    <ion-icon name="play-circle-outline"></ion-icon> Reproducir
+                </button>
+                <a id="download-btn" href="#"
+                    class="px-6 py-2.5 btn-premium rounded-lg flex items-center gap-2 font-medium">
+                    <ion-icon name="download-outline"></ion-icon> Descargar MP3
+                </a>
+            </div>
+
+            <button onclick="location.reload()"
+                class="text-gray-400 hover:text-white text-sm flex items-center gap-1 mt-4">
+                <ion-icon name="refresh-outline"></ion-icon> Convertir otro
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
