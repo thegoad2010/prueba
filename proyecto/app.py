@@ -125,41 +125,52 @@ def upload_pdf():
             'pages': metadata['pages']
         }
 def process_audio_background(app, conversion_id, text, language, voice):
+    print(f"DEBUG: Starting background thread for conversion {conversion_id}", flush=True)
     with app.app_context():
-        conversion = Conversion.query.get(conversion_id)
         try:
+            print("DEBUG: Querying conversion object", flush=True)
+            conversion = Conversion.query.get(conversion_id)
             conversion.status = 'processing'
             conversion.progress_message = 'Generating audio...'
             db.session.commit()
+            print("DEBUG: Status updated to processing", flush=True)
             
             # Generate Audio
-            # voice parameter is passed but gTTS is limited. 
-            # We will use language code from voice if it's different or just pass strict language.
-            # Assuming voice might be 'es' or 'es-us', etc.
-            
             output_filename = f"{conversion.id}_{int(time.time())}.mp3"
             output_path = os.path.join(app.config['AUDIO_FOLDER'], output_filename)
             
+            print(f"DEBUG: Calling gTTS generation. Text len: {len(text)}. Lang: {language}", flush=True)
             duration = generate_audio_gtts(
                 text=text,
-                language=language, # using the detected or selected language
+                language=language, 
                 output_path=output_path,
                 title=conversion.doc_title,
                 author=conversion.doc_author
             )
+            print("DEBUG: gTTS generation finished", flush=True)
             
             conversion.status = 'completed'
             conversion.progress_message = 'Completed'
             conversion.mp3_path = output_path
             conversion.duration_seconds = int(duration)
-            conversion.file_size_mb = os.path.getsize(output_path) / (1024 * 1024)
+            if os.path.exists(output_path):
+                conversion.file_size_mb = os.path.getsize(output_path) / (1024 * 1024)
+            else:
+                conversion.file_size_mb = 0.0
+            
             db.session.commit()
+            print("DEBUG: DB finalized. Done.", flush=True)
             
         except Exception as e:
-            conversion.status = 'error'
-            conversion.error_message = str(e)
-            db.session.commit()
-            print(f"Error in background task: {e}")
+            print(f"DEBUG: ERROR in background thread: {e}", flush=True)
+            try:
+                # Re-query in case session is botched
+                conversion = Conversion.query.get(conversion_id)
+                conversion.status = 'error'
+                conversion.error_message = str(e)
+                db.session.commit()
+            except:
+                pass
 @app.route('/generate', methods=['POST'])
 @login_required
 def generate_audio_route():
@@ -182,7 +193,8 @@ def generate_audio_route():
         text = f.read()
         
     # Start background thread
-    thread = threading.Thread(target=process_audio_background, args=(app._get_current_object(), conversion.id, text, conversion.detected_language, voice))
+    # Fix: app is the real Flask object, so we pass it directly.
+    thread = threading.Thread(target=process_audio_background, args=(app, conversion_id, text, conversion.detected_language, voice))
     thread.start()
     
     return {'status': 'started'}
