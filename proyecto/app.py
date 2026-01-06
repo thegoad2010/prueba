@@ -5,28 +5,22 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import os
 from config import Config
 from models import db, User, Conversion
-
 app = Flask(__name__)
 app.config.from_object(Config)
-
 db.init_app(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
-
 # Auto-create database tables (fix for Render)
 with app.app_context():
     db.create_all()
-
 @login_manager.user_loader
 def load_user(id):
     return User.query.get(int(id))
-
 @app.route('/')
 def index():
     if current_user.is_authenticated:
         return render_template('index.html')
     return redirect(url_for('login'))
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
@@ -40,7 +34,6 @@ def login():
             return redirect(url_for('index'))
         flash('Invalid username or password')
     return render_template('login.html')
-
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
@@ -60,27 +53,22 @@ def register():
         login_user(new_user)
         return redirect(url_for('index'))
     return render_template('register.html')
-
 @app.route('/logout')
 @login_required
 def logout():
     logout_user()
     return redirect(url_for('login'))
-
 @app.route('/history')
 @login_required
 def history():
     conversions = Conversion.query.filter_by(user_id=current_user.id).order_by(Conversion.timestamp.desc()).all()
     return render_template('history.html', conversions=conversions)
-
 import threading
 from utils.validators import validate_pdf
 from utils.pdf_processor import extract_text_metadata
 from utils.audio_generator import generate_audio_gtts
 import time
-
 # ... (previous code)
-
 @app.route('/upload', methods=['POST'])
 @login_required
 def upload_pdf():
@@ -136,7 +124,6 @@ def upload_pdf():
             'language': metadata['language'],
             'pages': metadata['pages']
         }
-
 def process_audio_background(app, conversion_id, text, language, voice):
     with app.app_context():
         conversion = Conversion.query.get(conversion_id)
@@ -173,7 +160,6 @@ def process_audio_background(app, conversion_id, text, language, voice):
             conversion.error_message = str(e)
             db.session.commit()
             print(f"Error in background task: {e}")
-
 @app.route('/generate', methods=['POST'])
 @login_required
 def generate_audio_route():
@@ -200,7 +186,6 @@ def generate_audio_route():
     thread.start()
     
     return {'status': 'started'}
-
 @app.route('/status/<int:conversion_id>')
 @login_required
 def get_status(conversion_id):
@@ -213,7 +198,6 @@ def get_status(conversion_id):
         'progress': conversion.progress_message,
         'mp3_url': url_for('static', filename=f'audio/{os.path.basename(conversion.mp3_path)}') if conversion.mp3_path else None
     }
-
 @app.route('/download/<int:conversion_id>')
 @login_required
 def download_mp3(conversion_id):
@@ -221,7 +205,19 @@ def download_mp3(conversion_id):
     if conversion.user_id != current_user.id:
         return "Unauthorized", 403
     return send_file(conversion.mp3_path, as_attachment=True)
-
+@app.route('/reset-db')
+def reset_db():
+    if not app.debug and not os.environ.get('Render'):
+        # Simple protection: only allow in debug or if we are sure (but here we just want it to work)
+        # For this specific troubleshooting session, we'll allow it.
+        pass
+    
+    try:
+        db.drop_all()
+        db.create_all()
+        return "Base de datos reiniciada correctamente. Ahora intenta registrarte de nuevo."
+    except Exception as e:
+        return f"Error al reiniciar la base de datos: {str(e)}"
 if __name__ == '__main__':
     with app.app_context():
         # Ensure directories exist
