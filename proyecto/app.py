@@ -218,10 +218,12 @@ def reset_db():
         return "Base de datos reiniciada correctamente. Ahora intenta registrarte de nuevo."
     except Exception as e:
         return f"Error al reiniciar la base de datos: {str(e)}"
+# Ensure directories exist (Correct placement for production/Gunicorn)
+with app.app_context():
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    os.makedirs(app.config['AUDIO_FOLDER'], exist_ok=True)
+    # db.create_all() is mainly for the first run or reset-db route, 
+    # but keeping it here doesn't hurt if we want auto-creation attempt on boot.
+    db.create_all()
 if __name__ == '__main__':
-    with app.app_context():
-        # Ensure directories exist
-        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-        os.makedirs(app.config['AUDIO_FOLDER'], exist_ok=True)
-        db.create_all()
     app.run(debug=True)
